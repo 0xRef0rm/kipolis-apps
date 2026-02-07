@@ -1,0 +1,54 @@
+
+version: '3.8'
+
+services:
+  # Database Service (PostgreSQL + PostGIS)
+  db:
+    image: postgis/postgis:15-3.3-alpine  # Using official Image with PostGIS pre-installed
+    container_name: kipolis_db
+    restart: always
+    environment:
+      POSTGRES_USER: kipolis_user
+      POSTGRES_PASSWORD: kipolis_password_secure_123
+      POSTGRES_DB: kipolis_core
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - kipolis_net
+
+  # Redis for Caching & Job Queue
+  redis:
+    image: redis:alpine
+    container_name: kipolis_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - kipolis_net
+
+  # Object Storage (MinIO) - S3 Compatible for Evidence Upload
+  minio:
+    image: minio/minio
+    container_name: kipolis_minio
+    restart: always
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minio_admin
+      MINIO_ROOT_PASSWORD: minio_password_secure_123
+    ports:
+      - "9000:9000"  # API Port
+      - "9001:9001"  # Console Port
+    volumes:
+      - minio_data:/data
+    networks:
+      - kipolis_net
+
+volumes:
+  postgres_data:
+  minio_data:
+
+networks:
+  kipolis_net:
+    driver: bridge

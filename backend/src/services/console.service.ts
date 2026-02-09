@@ -2,6 +2,7 @@ import { AppDataSource } from "../config/database";
 import { Incident } from "../entities/Incident";
 import { Responder } from "../entities/Responder";
 import { User } from "../entities/User";
+import { AuditLog } from "../entities/AuditLog";
 import { Between, In, IsNull, Not } from "typeorm";
 
 /**
@@ -10,6 +11,17 @@ import { Between, In, IsNull, Not } from "typeorm";
 export class ConsoleService {
     private incidentRepository = AppDataSource.getRepository(Incident);
     private responderRepository = AppDataSource.getRepository(Responder);
+    private auditRepository = AppDataSource.getRepository(AuditLog);
+
+    /**
+     * Get Recent Audit Logs for Intel Feed
+     */
+    async getRecentAuditLogs(limit: number = 10): Promise<AuditLog[]> {
+        return await this.auditRepository.find({
+            order: { created_at: "DESC" },
+            take: limit
+        });
+    }
 
     /**
      * Get Dashboard Statistics Summary
@@ -138,6 +150,17 @@ export class ConsoleService {
 
         await this.responderRepository.update(responderId, {
             status: "busy"
+        });
+
+        // Log manual dispatch
+        await this.auditRepository.save({
+            user_type: "system",
+            action: "DISPATCH",
+            details: {
+                incident_id: incidentId,
+                responder_id: responderId,
+                responder_name: responder.name
+            }
         });
     }
 

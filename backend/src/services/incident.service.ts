@@ -2,6 +2,7 @@ import { AppDataSource } from "../config/database";
 import { Incident } from "../entities/Incident";
 import { User } from "../entities/User";
 import { Responder } from "../entities/Responder";
+import { AuditLog } from "../entities/AuditLog";
 
 /**
  * Incident Service - Business logic for incident management
@@ -10,6 +11,7 @@ export class IncidentService {
     private incidentRepository = AppDataSource.getRepository(Incident);
     private userRepository = AppDataSource.getRepository(User);
     private responderRepository = AppDataSource.getRepository(Responder);
+    private auditRepository = AppDataSource.getRepository(AuditLog);
 
     /**
      * Create new incident (Panic Button Trigger)
@@ -65,6 +67,18 @@ export class IncidentService {
 
         // Update PostGIS geometry column
         await this.updateIncidentLocation(savedIncident.id, data.latitude, data.longitude);
+
+        // 🚨 Log the emergency trigger in Intel Feed
+        await this.auditRepository.save({
+            user_id: data.user_id,
+            user_type: "victim",
+            action: "PANIC_TRIGGER",
+            details: {
+                incident_id: savedIncident.id,
+                type: savedIncident.trigger_type,
+                region: region?.name || "UNKNOWN"
+            }
+        });
 
         // 🚨 LOCALIZED DISPATCH TRIGGER
         // TODO: Send push notification ONLY to responders in the identified region first

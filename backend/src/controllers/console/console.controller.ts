@@ -87,4 +87,16 @@ export class ConsoleController {
             res.status(500).json({ success: false, message: error.message });
         }
     };
+
+    /**
+     * GET /api/v1/console/monitoring/intel-feed
+     */
+    getAuditLogs = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const logs = await this.consoleService.getRecentAuditLogs(15);
+            res.json({ success: true, data: logs });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    };
 }

@@ -23,6 +23,7 @@ router.use(authorize(['admin', 'responder']));
 router.get("/dashboard/summary", controller.getSummary);
 router.get("/monitoring/incidents", controller.getLiveIncidents);
 router.get("/monitoring/responders", controller.getResponderMap);
+router.get("/monitoring/intel-feed", controller.getAuditLogs);
 
 // Incident Management
 router.post("/incidents/:id/dispatch", controller.dispatchResponder);

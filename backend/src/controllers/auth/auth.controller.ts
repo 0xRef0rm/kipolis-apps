@@ -32,6 +32,39 @@ export class AuthController {
     };
 
     /**
+     * POST /api/v1/victim/auth/register
+     */
+    victimRegister = async (req: Request, res: Response): Promise<void> => {
+        try {
+            // userId comes from auth middleware
+            const userId = (req as any).user?.id;
+            if (!userId) {
+                res.status(401).json({ success: false, message: "Unauthorized" });
+                return;
+            }
+
+            const { name, nik, address, blood_type, medical_conditions, email, avatar_url } = req.body;
+            if (!name || !nik || !address || !blood_type) {
+                res.status(400).json({ success: false, message: "Name, NIK, Address, and Blood Type are required for Command Center profiling" });
+                return;
+            }
+
+            const result = await this.authService.victimRegister(userId, {
+                name,
+                nik,
+                address,
+                blood_type,
+                medical_conditions,
+                email,
+                avatar_url
+            });
+            res.status(200).json({ success: true, message: "Registration completed", data: result });
+        } catch (error: any) {
+            res.status(400).json({ success: false, message: error.message });
+        }
+    };
+
+    /**
      * POST /api/v1/responder/auth/register
      */
     responderRegister = async (req: Request, res: Response): Promise<void> => {

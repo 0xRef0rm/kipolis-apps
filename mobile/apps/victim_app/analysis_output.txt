@@ -1,0 +1,10 @@
+Analyzing mobile-app...                                         
+
+   info - 'value' is deprecated and shouldn't be used. Use initialValue instead. This will set the initial value for the form field. This feature was deprecated after v3.33.0-1.0.pre - lib\features\auth\register_screen.dart:180:17 - deprecated_member_use
+warning - Unused import: 'package:permission_handler/permission_handler.dart' - lib\features\panic\panic_hub_screen.dart:10:8 - unused_import
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\panic\panic_hub_screen.dart:260:43 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\panic\panic_hub_screen.dart:299:57 - deprecated_member_use
+   info - 'withOpacity' is deprecated and shouldn't be used. Use .withValues() to avoid precision loss - lib\features\panic\panic_hub_screen.dart:312:59 - deprecated_member_use
+   info - Unnecessary 'const' keyword - lib\features\panic\panic_hub_screen.dart:325:29 - unnecessary_const
+
+6 issues found. (ran in 24.1s)

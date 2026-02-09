@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, BeforeInsert, BeforeUpdate } from "typeorm";
 
 /**
  * User Entity - Emergency Response System Users
@@ -27,8 +27,32 @@ export class User {
     /**
      * Email address (optional)
      */
-    @Column({ nullable: true, length: 100 })
+    @Column({ length: 100, nullable: true })
     email?: string;
+
+    /**
+     * National ID Number (NIK) - Crucial for official records
+     */
+    @Column({ length: 20, nullable: true, unique: true })
+    nik?: string;
+
+    /**
+     * Home Address
+     */
+    @Column({ type: "text", nullable: true })
+    address?: string;
+
+    /**
+     * Blood Type - Critical for medical emergencies
+     */
+    @Column({ length: 5, nullable: true })
+    blood_type?: string;
+
+    /**
+     * Medical conditions / Allergies
+     */
+    @Column({ type: "text", nullable: true })
+    medical_conditions?: string;
 
     /**
      * Emergency contact phone number
@@ -109,6 +133,12 @@ export class User {
     preferences?: Record<string, any>;
 
     /**
+     * User's Profile Photo URL - Crucial for visual identification by CC
+     */
+    @Column({ type: "text", nullable: true })
+    avatar_url?: string;
+
+    /**
      * Account creation timestamp
      */
     @CreateDateColumn()
@@ -119,4 +149,12 @@ export class User {
      */
     @UpdateDateColumn()
     updated_at!: Date;
+
+    @BeforeInsert()
+    @BeforeUpdate()
+    handleNameCase() {
+        if (this.name) {
+            this.name = this.name.toUpperCase();
+        }
+    }
 }

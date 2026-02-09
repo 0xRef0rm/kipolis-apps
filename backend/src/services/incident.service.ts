@@ -36,6 +36,11 @@ export class IncidentService {
             throw new Error("User not found");
         }
 
+        // ENFORCE PROFILING SYSTEM: Command Center requires valid data to handle incidents
+        if (!user.nik || !user.blood_type || !user.address) {
+            throw new Error("SECURITY_ERROR: Profiling incomplete. Command Center cannot authorize dispatch without valid NIK/Blood Type.");
+        }
+
         // Create incident
         const incident = this.incidentRepository.create({
             user_id: data.user_id,
@@ -163,7 +168,9 @@ export class IncidentService {
         const updatedBreadcrumbs = breadcrumbs.slice(-maxBreadcrumbs);
 
         await this.incidentRepository.update(incidentId, {
-            breadcrumbs: updatedBreadcrumbs
+            breadcrumbs: updatedBreadcrumbs,
+            latitude: breadcrumb.latitude,
+            longitude: breadcrumb.longitude
         });
     }
 
@@ -271,7 +278,9 @@ export class IncidentService {
                 phone: responder.phone,
                 type: responder.type,
                 badge_number: responder.badge_number,
-                status: responder.status
+                status: responder.status,
+                current_latitude: responder.current_latitude,
+                current_longitude: responder.current_longitude
             } as any,
             eta_minutes: incident.eta_minutes || null,
             distance_km,

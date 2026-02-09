@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from "typeorm";
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index, BeforeInsert, BeforeUpdate } from "typeorm";
 
 /**
  * Responder Entity - First Responders (Police, Paramedics, Security)
@@ -210,4 +210,12 @@ export class Responder {
      */
     @UpdateDateColumn()
     updated_at!: Date;
+
+    @BeforeInsert()
+    @BeforeUpdate()
+    handleNameCase() {
+        if (this.name) {
+            this.name = this.name.toUpperCase();
+        }
+    }
 }

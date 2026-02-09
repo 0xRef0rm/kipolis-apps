@@ -1,16 +1,9 @@
 import { Router } from "express";
 import { VictimIncidentController } from "../../../controllers/victim/incident.controller";
-import { AuthController } from "../../../controllers/auth/auth.controller";
 import { authMiddleware, authorize } from "../../../middleware/auth.middleware";
 
 const router = Router();
 const controller = new VictimIncidentController();
-const authController = new AuthController();
-
-/**
- * Public Auth Routes
- */
-router.post("/auth/login", authController.victimLogin);
 
 // All following routes require JWT and must be a 'victim' type
 router.use(authMiddleware);

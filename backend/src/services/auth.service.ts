@@ -47,9 +47,10 @@ export class AuthService {
      */
     async victimLogin(data: { phone: string; otp: string; device_id?: string; ip?: string }): Promise<any> {
         let user = await this.userRepository.findOneBy({ phone: data.phone });
-        const isNewUser = !user;
+        let isNewUser = false;
 
-        if (isNewUser) {
+        if (!user) {
+            isNewUser = true;
             user = this.userRepository.create({
                 phone: data.phone,
                 name: "Citizen_" + data.phone.slice(-4),
@@ -71,29 +72,88 @@ export class AuthService {
         }
 
         // Update Security Info
-        if (user) {
-            user.last_login_at = new Date();
-            user.login_attempts = 0;
-            await this.userRepository.save(user);
+        user.last_login_at = new Date();
+        user.login_attempts = 0;
+        await this.userRepository.save(user);
 
-            // Audit Trail
-            await this.logAudit({
-                user_id: user.id,
-                user_type: 'victim',
-                action: isNewUser ? 'REGISTER' : 'LOGIN',
-                device_id: data.device_id,
-                ip: data.ip,
-                details: { method: 'OTP' }
-            });
+        // Audit Trail
+        await this.logAudit({
+            user_id: user.id,
+            user_type: 'victim',
+            action: isNewUser ? 'REGISTER_INIT' : 'LOGIN',
+            device_id: data.device_id,
+            ip: data.ip,
+            details: { method: 'OTP' }
+        });
 
-            const token = this.generateToken({ id: user.id, type: 'victim' });
+        const token = this.generateToken({ id: user.id, type: 'victim' });
 
-            return {
-                token,
-                user: { id: user.id, phone: user.phone, name: user.name }
-            };
+        // profiling system validation: NIK, Name, Blood Type, and Address are mandatory
+        const needsRegistration = isNewUser ||
+            !user.nik ||
+            !user.blood_type ||
+            !user.address ||
+            user.name.startsWith("Citizen_");
+
+        return {
+            token,
+            user: {
+                id: user.id,
+                phone: user.phone,
+                name: user.name,
+                needs_registration: needsRegistration
+            }
+        };
+    }
+
+    /**
+     * [VICTIM] Complete Registration
+     */
+    async victimRegister(userId: string, data: {
+        name: string;
+        nik: string;
+        address: string;
+        blood_type: string;
+        medical_conditions?: string;
+        email?: string;
+        avatar_url?: string;
+    }): Promise<any> {
+        const user = await this.userRepository.findOneBy({ id: userId });
+        if (!user) throw new Error("User not found");
+
+        // Check if NIK already exists for another user
+        const existingNik = await this.userRepository.findOneBy({ nik: data.nik });
+        if (existingNik && existingNik.id !== userId) {
+            throw new Error("NIK is already registered to another account");
         }
-        throw new Error("Login failed");
+
+        user.name = data.name.toUpperCase();
+        user.nik = data.nik;
+        user.address = data.address;
+        user.blood_type = data.blood_type;
+        user.medical_conditions = data.medical_conditions;
+        if (data.email) user.email = data.email;
+        if (data.avatar_url) user.avatar_url = data.avatar_url;
+
+        await this.userRepository.save(user);
+
+        await this.logAudit({
+            user_id: user.id,
+            user_type: 'victim',
+            action: 'PROFILE_COMPLETED',
+            details: { nik: data.nik, blood_type: data.blood_type }
+        });
+
+        return {
+            id: user.id,
+            phone: user.phone,
+            name: user.name,
+            nik: user.nik,
+            blood_type: user.blood_type,
+            medical_conditions: user.medical_conditions,
+            address: user.address,
+            avatar_url: user.avatar_url
+        };
     }
 
     /**
@@ -107,7 +167,7 @@ export class AuthService {
 
         const responder = this.responderRepository.create({
             badge_number: data.badge_number,
-            name: data.name,
+            name: data.name.toUpperCase(),
             phone: data.phone,
             type: data.type,
             department: data.department,

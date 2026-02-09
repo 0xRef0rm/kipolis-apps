@@ -5,7 +5,7 @@ import { Incident } from "../entities/Incident";
 import { Responder } from "../entities/Responder";
 import { AuditLog } from "../entities/AuditLog";
 import { Region } from "../entities/Region";
-
+import { EmergencyOrganization } from "../entities/EmergencyOrganization";
 
 dotenv.config();
 
@@ -21,11 +21,11 @@ export const AppDataSource = new DataSource({
     // Synchronize schema (auto-create tables) - ONLY for development
     synchronize: process.env.NODE_ENV !== "production",
 
-    // Logging configuration
-    logging: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
+    // Logging configuration - Optimized for clarity (No query spam)
+    logging: ["error", "warn"],
 
     // Entity registration (explicit import for better type safety)
-    entities: [User, Incident, Responder, AuditLog, Region],
+    entities: [User, Incident, Responder, AuditLog, Region, EmergencyOrganization],
 
     // Migrations (for production deployments)
     migrations: ["src/migrations/**/*.ts"],

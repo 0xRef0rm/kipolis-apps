@@ -183,6 +183,8 @@ export class ConsoleService {
                 r.type, 
                 r.badge_number, 
                 r.department,
+                r.unit,
+                r.rating,
                 ST_Distance(
                     r.location::geography, 
                     ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography

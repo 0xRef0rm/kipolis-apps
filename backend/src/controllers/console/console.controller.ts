@@ -74,4 +74,17 @@ export class ConsoleController {
             res.status(500).json({ success: false, message: error.message });
         }
     };
+
+    /**
+     * GET /api/v1/console/incidents/:id/intelligence
+     */
+    getIncidentIntelligence = async (req: Request, res: Response): Promise<void> => {
+        try {
+            const id = req.params.id as string;
+            const intel = await this.consoleService.getIncidentIntelligence(id);
+            res.json({ success: true, data: intel });
+        } catch (error: any) {
+            res.status(500).json({ success: false, message: error.message });
+        }
+    };
 }

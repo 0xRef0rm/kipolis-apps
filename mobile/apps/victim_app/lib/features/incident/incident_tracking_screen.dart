@@ -172,16 +172,42 @@ class _IncidentTrackingScreenState extends State<IncidentTrackingScreen> {
       extendBodyBehindAppBar: true,
       body: Stack(
         children: [
-          GoogleMap(
-            initialCameraPosition: const CameraPosition(
-              target: LatLng(-6.1751, 106.8272), // Default Jakarta
-              zoom: 15,
+          // GoogleMap(
+          //   initialCameraPosition: const CameraPosition(
+          //     target: LatLng(-6.1751, 106.8272), // Default Jakarta
+          //     zoom: 15,
+          //   ),
+          //   onMapCreated: (controller) => _mapController = controller,
+          //   markers: _markers,
+          //   myLocationEnabled: true,
+          //   zoomControlsEnabled: false,
+          //   mapStyle: null, // Could add dark mode style here
+          // ),
+          
+          // Placeholder for Map when API Key is pending
+          Container(
+            color: const Color(0xFF121216),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.map_outlined, color: Colors.white10, size: 64),
+                  const SizedBox(height: 16),
+                  Text(
+                    "PETA TAKTIS OFFLINE",
+                    style: TextStyle(
+                      color: Colors.white24, 
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2
+                    ),
+                  ),
+                  const Text(
+                    "(MENUNGGU AKTIVASI GOOGLE MAPS API)",
+                    style: TextStyle(color: Colors.white10, fontSize: 10),
+                  ),
+                ],
+              ),
             ),
-            onMapCreated: (controller) => _mapController = controller,
-            markers: _markers,
-            myLocationEnabled: true,
-            zoomControlsEnabled: false,
-            mapStyle: null, // Could add dark mode style here
           ),
           
           if (_isLoading)

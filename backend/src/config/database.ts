@@ -4,6 +4,8 @@ import { User } from "../entities/User";
 import { Incident } from "../entities/Incident";
 import { Responder } from "../entities/Responder";
 import { AuditLog } from "../entities/AuditLog";
+import { Region } from "../entities/Region";
+
 
 dotenv.config();
 
@@ -23,7 +25,7 @@ export const AppDataSource = new DataSource({
     logging: process.env.NODE_ENV === "development" ? ["query", "error", "warn"] : ["error"],
 
     // Entity registration (explicit import for better type safety)
-    entities: [User, Incident, Responder, AuditLog],
+    entities: [User, Incident, Responder, AuditLog, Region],
 
     // Migrations (for production deployments)
     migrations: ["src/migrations/**/*.ts"],

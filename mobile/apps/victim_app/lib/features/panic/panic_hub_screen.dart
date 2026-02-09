@@ -112,18 +112,33 @@ class _PanicHubScreenState extends State<PanicHubScreen> with TickerProviderStat
     });
   }
 
+  List<Map<String, dynamic>> _breadcrumbBuffer = [];
+  
   void _startLocationStream() {
-
     _positionStream = Geolocator.getPositionStream(
       locationSettings: const LocationSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 5,
       ),
     ).listen((Position position) {
-      setState(() {
-        _currentPosition = position;
-        _isLocating = false;
-      });
+      if (mounted) {
+        setState(() {
+          _currentPosition = position;
+          _isLocating = false;
+          
+          // Add to breadcrumb buffer (keep last 10 points for context)
+          _breadcrumbBuffer.add({
+            "latitude": position.latitude,
+            "longitude": position.longitude,
+            "timestamp": DateTime.now().toIso8601String(),
+            "accuracy": position.accuracy,
+          });
+          
+          if (_breadcrumbBuffer.length > 10) {
+            _breadcrumbBuffer.removeAt(0);
+          }
+        });
+      }
     });
   }
 
@@ -134,10 +149,10 @@ class _PanicHubScreenState extends State<PanicHubScreen> with TickerProviderStat
       return;
     }
 
-    if (_currentPosition!.accuracy > 100) {
-      _showToast("Akurasi GPS terlalu rendah. Tetap di area terbuka.");
-      _holdController.reset();
-      return;
+    // Inform user if accuracy is low, but DON'T block the trigger
+    bool lowAccuracy = _currentPosition!.accuracy > 50;
+    if (lowAccuracy) {
+      _showToast("Peringatan: Sinyal GPS lemah, tetap kirimkan...");
     }
 
     setState(() {
@@ -152,8 +167,15 @@ class _PanicHubScreenState extends State<PanicHubScreen> with TickerProviderStat
         {
           "latitude": _currentPosition!.latitude,
           "longitude": _currentPosition!.longitude,
+          "accuracy": _currentPosition!.accuracy,
+          "is_low_accuracy": lowAccuracy,
           "trigger_type": "manual_panic",
-          "device_info": {"platform": "mobile_app"}
+          "breadcrumbs": _breadcrumbBuffer, // Send movement context
+          "device_info": {
+            "platform": "mobile_app",
+            "battery_level": "unknown", // Potential addition
+            "timestamp": DateTime.now().toIso8601String(),
+          }
         },
       );
 
@@ -175,8 +197,10 @@ class _PanicHubScreenState extends State<PanicHubScreen> with TickerProviderStat
     } catch (e) {
       _showToast("Kesalahan Jaringan: Periksa Koneksi");
     } finally {
-      setState(() => _isTriggering = false);
-      _holdController.reset();
+      if (mounted) {
+        setState(() => _isTriggering = false);
+        _holdController.reset();
+      }
     }
   }
 

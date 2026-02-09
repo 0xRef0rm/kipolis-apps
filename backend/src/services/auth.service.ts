@@ -200,7 +200,9 @@ export class AuthService {
         if (!responder) throw new Error("Credentials mismatch");
 
         // Device Binding Logic
-        if (responder.device_id && responder.device_id !== data.device_id) {
+        // RELAXED FOR DEVELOPMENT: Bypass binding check if not in production
+        const isProduction = process.env.NODE_ENV === "production";
+        if (isProduction && responder.device_id && responder.device_id !== data.device_id) {
             await this.logAudit({
                 user_id: responder.id,
                 user_type: 'responder',

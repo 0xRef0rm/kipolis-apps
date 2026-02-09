@@ -53,17 +53,47 @@ export class IncidentService {
             severity: "high", // Default to high for panic button
         });
 
+        // Find and tag the appropriate region (Hyper-Local Dispatch)
+        const region = await this.findRegionByCoordinates(data.latitude, data.longitude);
+        if (region) {
+            incident.region_id = region.id;
+            console.log(`[Dispatch] Incident identified in region: ${region.name}`);
+        }
+
         // Save incident
         const savedIncident = await this.incidentRepository.save(incident);
 
         // Update PostGIS geometry column
         await this.updateIncidentLocation(savedIncident.id, data.latitude, data.longitude);
 
-        // TODO: Find and assign nearest responder
-        // TODO: Send push notification to responder
-        // TODO: Notify emergency contact
+        // 🚨 LOCALIZED DISPATCH TRIGGER
+        // TODO: Send push notification ONLY to responders in the identified region first
+        // TODO: If no local responder accepts within 30s, escalate to nearest absolute responder
 
         return savedIncident;
+    }
+
+    /**
+     * Find the geographical region node for a given coordinate
+     */
+    async findRegionByCoordinates(lat: number, lng: number): Promise<any | null> {
+        try {
+            const query = `
+                SELECT id, name, local_emergency_number
+                FROM regions
+                WHERE ST_Within(
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326),
+                    boundary
+                )
+                AND is_active = true
+                LIMIT 1
+            `;
+            const result = await AppDataSource.query(query, [lng, lat]);
+            return result.length > 0 ? result[0] : null;
+        } catch (error) {
+            console.error("[Dispatch] Region lookup failed:", error);
+            return null;
+        }
     }
 
     /**
@@ -290,13 +320,15 @@ export class IncidentService {
 
     /**
      * Find nearest available responder (using PostGIS)
+     * PRIORITIZES responders in the same region, then falls back to absolute nearest.
      */
     async findNearestResponder(
         latitude: number,
         longitude: number,
         type?: string,
-        maxDistanceKm: number = 50
-    ): Promise<Responder | null> {
+        maxDistanceKm: number = 50,
+        regionId?: string
+    ): Promise<any | null> {
         let query = `
             SELECT 
                 r.*,
@@ -317,20 +349,45 @@ export class IncidentService {
             params.push(type);
         }
 
-        query += `
-            AND ST_DWithin(
-                r.location::geography,
-                ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-                $${params.length + 1}
-            )
-            ORDER BY r.location <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
-            LIMIT 1
-        `;
+        // Region Prioritization logic
+        if (regionId) {
+            query += ` ORDER BY (CASE WHEN r.region_id = $${params.length + 1} THEN 0 ELSE 1 END), 
+                       r.location <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)`;
+            params.push(regionId);
+        } else {
+            query += ` ORDER BY r.location <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)`;
+        }
 
-        params.push(maxDistanceKm * 1000); // Convert km to meters
+        query += ` LIMIT 1`;
 
         const result = await AppDataSource.query(query, params);
 
         return result.length > 0 ? result[0] : null;
+    }
+
+    /**
+     * Update incident status and calculate response metrics
+     */
+    async updateIncidentStatus(incidentId: string, status: string, responderId?: string): Promise<void> {
+        const incident = await this.incidentRepository.findOne({ where: { id: incidentId } });
+        if (!incident) throw new Error("Incident not found");
+
+        const updateData: any = { status };
+
+        if (status === "dispatched" && responderId) {
+            updateData.responder_id = responderId;
+            updateData.dispatched_at = new Date();
+        }
+
+        if (status === "resolved") {
+            updateData.resolved_at = new Date();
+            // Calculate response time performance
+            if (incident.created_at) {
+                const diffMs = new Date().getTime() - incident.created_at.getTime();
+                updateData.response_time_minutes = diffMs / (1000 * 60);
+            }
+        }
+
+        await this.incidentRepository.update(incidentId, updateData);
     }
 }

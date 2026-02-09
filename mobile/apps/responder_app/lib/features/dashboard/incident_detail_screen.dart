@@ -239,18 +239,43 @@ class _IncidentDetailScreenState extends State<IncidentDetailScreen> {
       body: Column(
         children: [
           Expanded(
-            child: GoogleMap(
-              initialCameraPosition: CameraPosition(
-                target: LatLng(victimLat, victimLng),
-                zoom: 15,
+            child: 
+              // GoogleMap(
+              //   initialCameraPosition: CameraPosition(
+              //     target: LatLng(victimLat, victimLng),
+              //     zoom: 15,
+              //   ),
+              //   onMapCreated: (controller) => _mapController = controller,
+              //   markers: _markers,
+              //   polylines: _polylines,
+              //   myLocationEnabled: true,
+              //   myLocationButtonEnabled: true,
+              //   zoomControlsEnabled: false,
+              // ),
+              Container(
+                color: const Color(0xFF121216),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.gps_fixed, color: Colors.white10, size: 48),
+                      const SizedBox(height: 16),
+                      Text(
+                        "TRACKING MODE: OPS-ONLY",
+                        style: TextStyle(
+                          color: Colors.white24, 
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2
+                        ),
+                      ),
+                      const Text(
+                        "(GOOGLE MAPS PENDING APPROVAL)",
+                        style: TextStyle(color: Colors.white10, fontSize: 10),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              onMapCreated: (controller) => _mapController = controller,
-              markers: _markers,
-              polylines: _polylines,
-              myLocationEnabled: true,
-              myLocationButtonEnabled: true,
-              zoomControlsEnabled: false,
-            ),
           ),
           Container(
             padding: const EdgeInsets.all(24),

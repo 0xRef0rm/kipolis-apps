@@ -173,6 +173,13 @@ export class Incident {
     assigned_operator_id?: string;
 
     /**
+     * Regional Node ID where incident occurred
+     */
+    @Column({ type: "uuid", nullable: true })
+    @Index()
+    region_id?: string;
+
+    /**
      * Timestamp when operator acknowledged the incident
      */
     @Column({ type: "timestamp", nullable: true })

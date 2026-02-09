@@ -57,6 +57,13 @@ export class Responder {
     unit?: string;
 
     /**
+     * Regional Node ID where the responder is assigned
+     */
+    @Column({ type: "uuid", nullable: true })
+    @Index()
+    region_id?: string;
+
+    /**
      * Current status:
      * - available: Ready to accept incidents
      * - on_the_way: Navigating to incident

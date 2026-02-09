@@ -45,6 +45,17 @@ export class ConsoleService {
             .andWhere("incident.resolved_at >= :start", { start: todayAtZero })
             .getRawOne();
 
+        // Regional Performance Breakdown
+        const regionalStats = await this.incidentRepository
+            .createQueryBuilder("incident")
+            .select("region.name", "region_name")
+            .addSelect("COUNT(*)", "total_incidents")
+            .addSelect("AVG(incident.response_time_minutes)", "avg_response_time")
+            .leftJoin("regions", "region", "incident.region_id = region.id")
+            .where("incident.created_at >= :start", { start: todayAtZero })
+            .groupBy("region.name")
+            .getRawMany();
+
         return {
             incidents: {
                 total_today: totalToday,
@@ -57,7 +68,12 @@ export class ConsoleService {
                 online: availableResponders,
                 deployment_rate: totalResponders > 0 ? ((totalResponders - availableResponders) / totalResponders * 100).toFixed(1) + "%" : "0%"
             },
-            avg_response_time: parseFloat(responseTimeResult?.avg || 0).toFixed(2) + " mins"
+            avg_response_time: parseFloat(responseTimeResult?.avg || 0).toFixed(2) + " mins",
+            regional_performance: regionalStats.map(rs => ({
+                region: rs.region_name || "UNKNOWN",
+                count: parseInt(rs.total_incidents),
+                avg_time: parseFloat(rs.avg_response_time || 0).toFixed(2) + "m"
+            }))
         };
     }
 
@@ -123,5 +139,45 @@ export class ConsoleService {
         await this.responderRepository.update(responderId, {
             status: "busy"
         });
+    }
+
+    /**
+     * Get Incident Intelligence (Nearby Responders)
+     */
+    async getIncidentIntelligence(incidentId: string): Promise<any> {
+        const incident = await this.incidentRepository.findOne({
+            where: { id: incidentId },
+            relations: ["user"]
+        });
+
+        if (!incident) throw new Error("Incident not found");
+
+        // Find 3 nearest available responders using PostGIS for precise tactical suggestions
+        const nearby = await AppDataSource.query(`
+            SELECT 
+                r.id, 
+                r.name, 
+                r.type, 
+                r.badge_number, 
+                r.department,
+                ST_Distance(
+                    r.location::geography, 
+                    ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
+                ) / 1000 AS distance_km
+            FROM responders r
+            WHERE r.is_active = true 
+              AND r.status = 'available'
+              AND r.location IS NOT NULL
+            ORDER BY r.location <-> ST_SetSRID(ST_MakePoint($1, $2), 4326)
+            LIMIT 3
+        `, [incident.longitude, incident.latitude]);
+
+        return {
+            incident,
+            nearby_responders: nearby.map((r: any) => ({
+                ...r,
+                distance_km: parseFloat(r.distance_km).toFixed(2)
+            }))
+        };
     }
 }

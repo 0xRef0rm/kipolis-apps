@@ -26,6 +26,7 @@ router.get("/monitoring/responders", controller.getResponderMap);
 
 // Incident Management
 router.post("/incidents/:id/dispatch", controller.dispatchResponder);
+router.get("/incidents/:id/intelligence", controller.getIncidentIntelligence);
 
 // Analytics
 router.get("/analytics/trend", controller.getTrend);

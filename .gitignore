@@ -48,3 +48,4 @@ mobile-app/android/app/profile/
 mobile-app/android/app/release/
 
 documentation/*
+backend/logs/*
